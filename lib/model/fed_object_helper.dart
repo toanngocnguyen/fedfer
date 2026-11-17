@@ -207,4 +207,10 @@ class FedObjectHelper<T extends FedObject> {
     final db = await dbManager.getDatabase();
     return await FedDBManager.isColumnExists(db, tableName, columnName);
   }
+
+  /// Check if a field is included and not excluded
+  bool incExc(String? field, Set<String>? included, Set<String>? excluded) {
+    if (field == null) return false;
+    return (included?.contains(field)??true) && !(excluded?.contains(field)??false);
+  }
 }
