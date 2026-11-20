@@ -22,8 +22,8 @@ class FedPage {
 class Root {
   Root(this.code);
 
-  static Map<String, FedPage> allPages = {};
-  static Map<String, FedComponent> components = {};
+  static Map<String, FedPage> pages = {};
+  static Map<String, FedElement> elements = {};
 
   FedViewCode? code;
 
@@ -42,8 +42,8 @@ class Root {
   // return page id
   static int addPage(String url, FedPage page) {
     int pageId = -1;
-    if (allPages.containsKey(url)) {
-      pageId = allPages[url]!.id;
+    if (pages.containsKey(url)) {
+      pageId = pages[url]!.id;
     } else {
       maxId++;
       pageId = maxId;
@@ -51,11 +51,11 @@ class Root {
 
     page.id = pageId;
 
-    allPages[url] = page;
+    pages[url] = page;
 
     page.code!.parentCode = _root.code;
 
-    if (allPages.length == 1) {
+    if (pages.length == 1) {
       currentPage = page;
       _root.code!.buildView = (context, processor) {
         return currentPage!.code!.widget;
@@ -68,9 +68,9 @@ class Root {
   // return removed page id
   static int removePage(String url) {
     int pageId = -1;
-    if (allPages.containsKey(url)) {
-      pageId = allPages[url]!.id;
-      allPages.remove(url);
+    if (pages.containsKey(url)) {
+      pageId = pages[url]!.id;
+      pages.remove(url);
     }
 
     return pageId;
@@ -78,8 +78,8 @@ class Root {
 
   static FedPage? getPage(String url) {
     FedPage? page;
-    if (allPages.containsKey(url)) {
-      page = allPages[url];
+    if (pages.containsKey(url)) {
+      page = pages[url];
     }
 
     return page;
@@ -102,9 +102,9 @@ class Root {
       path = url;
     }
 
-    if (allPages.containsKey(path)) {
+    if (pages.containsKey(path)) {
       currentUrl = url;
-      currentPage = allPages[path];
+      currentPage = pages[path];
       currentPage!.code!.viewRequest.setRequestString(url);
       return load(currentPage, rebuild);
     }

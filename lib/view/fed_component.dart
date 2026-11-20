@@ -7,8 +7,8 @@ import 'package:flutter/widgets.dart';
 
 import '../view.dart';
 
-class FedComponent {
-  FedComponent(this.code);
+class FedElement {
+  FedElement(this.code);
 
   FedViewCode? code;
 
@@ -19,15 +19,15 @@ class FedComponent {
   }
 }
 
-class FedComponentControl {
-  FedComponentControl(this.code);
+class FedElementSwitcher {
+  FedElementSwitcher(this.code);
 
-  Map<String, FedComponent> allComponents = {};
+  Map<String, FedElement> allElements = {};
 
   FedViewCode? code;
 
   String? currentUrl;
-  FedComponent? currentComponent;
+  FedElement? currentElement;
 
   Widget? get widget {
     return code!.widget;
@@ -36,58 +36,58 @@ class FedComponentControl {
   static int maxId = 0;
 
   // return page id
-  int addComponent(String url, FedComponent component) {
+  int addElement(String url, FedElement element) {
     int pageId = -1;
-    if (allComponents.containsKey(url)) {
-      pageId = allComponents[url]!.id;
+    if (allElements.containsKey(url)) {
+      pageId = allElements[url]!.id;
     } else {
       maxId++;
       pageId = maxId;
     }
 
-    component.id = pageId;
+    element.id = pageId;
 
-    allComponents[url] = component;
+    allElements[url] = element;
 
-    component.code!.parentCode = code;
+    element.code!.parentCode = code;
 
-    if (allComponents.length == 1) {
-      currentComponent = component;
+    if (allElements.length == 1) {
+      currentElement = element;
       code!.buildView = (context, processor) {
-        return currentComponent!.code!.widget;
+        return currentElement!.code!.widget;
       };
     }
 
     return pageId;
   }
 
-  // return removed component id
-  int removeComponent(String url) {
+  // return removed element id
+  int removeElement(String url) {
     int compoentId = -1;
-    if (allComponents.containsKey(url)) {
-      compoentId = allComponents[url]!.id;
-      allComponents.remove(url);
+    if (allElements.containsKey(url)) {
+      compoentId = allElements[url]!.id;
+      allElements.remove(url);
     }
 
     return compoentId;
   }
 
-  FedComponent? getComponent(String url) {
-    FedComponent? component;
-    if (allComponents.containsKey(url)) {
-      component = allComponents[url];
+  FedElement? getElement(String url) {
+    FedElement? element;
+    if (allElements.containsKey(url)) {
+      element = allElements[url];
     }
 
-    return component;
+    return element;
   }
 
-  // return switched Component
-  FedComponent? showComponent(String url) {
-    return loadComponent(url, false);
+  // return switched Element
+  FedElement? showElement(String url) {
+    return loadElement(url, false);
   }
 
-  // return loaded Component
-  FedComponent? loadComponent(String url, [bool rebuild = true]) {
+  // return loaded Element
+  FedElement? loadElement(String url, [bool rebuild = true]) {
     int questionPlace = url.indexOf('?');
 
     late String path;
@@ -98,39 +98,39 @@ class FedComponentControl {
       path = url;
     }
 
-    if (allComponents.containsKey(path)) {
+    if (allElements.containsKey(path)) {
       currentUrl = url;
-      currentComponent = allComponents[path];
-      currentComponent!.code!.viewRequest.setRequestString(url);
-      return load(currentComponent, rebuild);
+      currentElement = allElements[path];
+      currentElement!.code!.viewRequest.setRequestString(url);
+      return load(currentElement, rebuild);
     }
 
-    return currentComponent;
+    return currentElement;
   }
 
-  FedComponent? reload() {
-    return load(currentComponent, true);
+  FedElement? reload() {
+    return load(currentElement, true);
   }
 
-  FedComponent? load(FedComponent? viewComponent, bool rebuild) {
-    if (viewComponent != null) {
+  FedElement? load(FedElement? viewElement, bool rebuild) {
+    if (viewElement != null) {
       code!.buildView = (context, processor) {
-        return viewComponent.code!.widget; // as Widget;
+        return viewElement.code!.widget; // as Widget;
       };
 
       if (code!.isInitiated) {
         code!.refreshView(rebuild);
       }
 
-      viewComponent.code!.onLoad().then((loaded) {
+      viewElement.code!.onLoad().then((loaded) {
         if (loaded) {
           if (code!.isInitiated) {
-            viewComponent.code!.refreshView(rebuild);
+            viewElement.code!.refreshView(rebuild);
           }
         }
       });
     }
 
-    return viewComponent;
+    return viewElement;
   }
 }

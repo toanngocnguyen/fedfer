@@ -3,13 +3,14 @@ import 'package:meta/meta.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:sqflite/sqflite.dart';
+
 import 'fed_db_manager.dart';
 import 'fed_object_helper.dart';
 
 abstract class FedObject {
   String? id;
 
-  FedObject({this.id, required this.myHelper});
+  FedObject({this.id, required this.iHelper});
 
   // Convert an object into a Map. Object keys must match database columns.
   @mustBeOverridden
@@ -34,7 +35,7 @@ abstract class FedObject {
   // --- Metadata definition ---
 
   /// Helper for storage activities: CRUD,...
-  FedObjectHelper myHelper;
+  FedObjectHelper iHelper;
 
   @mustBeOverridden
   Future manageModel(Database db, int oldVersion, int newVersion) async {
@@ -47,14 +48,11 @@ abstract class FedObject {
   }
 
   Future _createTable(Database db, int newVersion) async {
-    bool bExisted = await FedDBManager.isTableExists(
-      db,
-      myHelper.tableName,
-    );
+    bool bExisted = await FedDBManager.isTableExists(db, iHelper.tableName);
 
     if (!bExisted) {
       await db.execute('''
-      CREATE TABLE ${myHelper.tableName} (
+      CREATE TABLE ${iHelper.tableName} (
         id TEXT PRIMARY KEY
       )
       ''');
@@ -69,24 +67,27 @@ abstract class FedObject {
 
   // Insert
   Future<String?> insert({Set<String>? included, Set<String>? excluded}) async {
-    final db = await myHelper.dbManager.getDatabase();
+    final db = await iHelper.dbManager.getDatabase();
     if (id == null || id == '') {
       id = Uuid().v7();
     }
 
-    await db.insert(myHelper.tableName, toMap(included:included, excluded: excluded));
+    await db.insert(
+      iHelper.tableName,
+      toMap(included: included, excluded: excluded),
+    );
 
     return id;
   }
 
   // Update
   Future<String?> update({Set<String>? included, Set<String>? excluded}) async {
-    final db = await myHelper.dbManager.getDatabase();
+    final db = await iHelper.dbManager.getDatabase();
     if (id == null || id == '') {
       return null;
     } else {
       await db.update(
-        myHelper.tableName,
+        iHelper.tableName,
         toMap(included: included, excluded: excluded),
         where: 'id = ?',
         whereArgs: [id],
@@ -98,23 +99,29 @@ abstract class FedObject {
 
   // Save: create & update
   Future<String?> save({Set<String>? included, Set<String>? excluded}) async {
-    final db = await myHelper.dbManager.getDatabase();
+    final db = await iHelper.dbManager.getDatabase();
     if (id == null || id == '') {
       id = Uuid().v7();
 
-      await db.insert(myHelper.tableName, toMap(included:included, excluded: excluded));
+      await db.insert(
+        iHelper.tableName,
+        toMap(included: included, excluded: excluded),
+      );
     } else {
-      bool exists = await FedObject.isExists(myHelper, id!);
+      bool exists = await FedObject.isExists(iHelper, id!);
 
       if (exists) {
         await db.update(
-          myHelper.tableName,
-          toMap(included:included, excluded: excluded),
+          iHelper.tableName,
+          toMap(included: included, excluded: excluded),
           where: 'id = ?',
           whereArgs: [id],
         );
       } else {
-        await db.insert(myHelper.tableName, toMap(included:included, excluded: excluded));
+        await db.insert(
+          iHelper.tableName,
+          toMap(included: included, excluded: excluded),
+        );
       }
     }
 
@@ -123,12 +130,12 @@ abstract class FedObject {
 
   // Load by Id
   Future<bool> load([String? loadId]) async {
-    final db = await myHelper.dbManager.getDatabase();
+    final db = await iHelper.dbManager.getDatabase();
 
     if (loadId != null) id = loadId;
 
     final result = await db.query(
-      myHelper.tableName,
+      iHelper.tableName,
       //columns: ['id'],
       where: 'id = ?',
       whereArgs: [loadId],
@@ -143,16 +150,16 @@ abstract class FedObject {
 
   // Load by a field like an unique Code
   Future<bool> loadByField(String field, dynamic fieldValue) async {
-    final db = await myHelper.dbManager.getDatabase();
+    final db = await iHelper.dbManager.getDatabase();
 
-    bool columnExists = await myHelper.isColumnExists(field);
+    bool columnExists = await iHelper.isColumnExists(field);
 
     if (!columnExists) {
       throw ArgumentError('Invalid column name "$field"');
     }
 
     final result = await db.query(
-      myHelper.tableName,
+      iHelper.tableName,
       where: '$field = ?',
       whereArgs: [fieldValue],
       limit: 1,
@@ -230,7 +237,7 @@ abstract class FedObject {
       throw ArgumentError('Invalid column name "$field"');
     }
 
-    if (currentId == null || currentId == ''){
+    if (currentId == null || currentId == '') {
       final result = await db.query(
         helper.tableName,
         columns: ['id'],
@@ -240,9 +247,7 @@ abstract class FedObject {
       );
 
       return result.isNotEmpty;
-    }
-    else
-    {
+    } else {
       final result = await db.query(
         helper.tableName,
         columns: ['id'],
