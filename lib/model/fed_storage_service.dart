@@ -3,9 +3,9 @@ import 'package:sqflite/sqflite.dart';
 import 'fed_db_manager.dart';
 import 'fed_object.dart';
 
-class FedObjectHelper<T extends FedObject> {
+class FedStorageService<T extends FedObject> {
   /// Helper is used as a runtime code/factory utility to create FedObject, manage database operations,...
-  FedObjectHelper.makeHelper({
+  FedStorageService.makeStorageService({
     required this.createNew,
     required this._tableName,
     this._dbManager,
@@ -15,7 +15,7 @@ class FedObjectHelper<T extends FedObject> {
   }
 
   late T _ref;
-  T Function(FedObjectHelper helper) createNew;
+  T Function(FedStorageService storage) createNew;
 
   FedDBManager? _dbManager;
   FedDBManager get dbManager {
@@ -54,8 +54,12 @@ class FedObjectHelper<T extends FedObject> {
 
   late Future Function(Database db, int oldVersion, int newVersion) manageModel;
 
-  Map<String, dynamic> toMap(T fedObject, {Set<String>? included, Set<String>? excluded}) {
-    return fedObject.toMap(included:included, excluded: excluded);
+  Map<String, dynamic> toMap(
+    T fedObject, {
+    Set<String>? included,
+    Set<String>? excluded,
+  }) {
+    return fedObject.toMap(included: included, excluded: excluded);
   }
 
   T fromMap(Map<String, dynamic> map) {
@@ -67,18 +71,30 @@ class FedObjectHelper<T extends FedObject> {
   // --- CRUD OPERATIONS ---
 
   /// Insert
-  Future<String?> insert(T fedObject, {Set<String>? included, Set<String>? excluded}) async {
-    return await fedObject.insert(included:included, excluded: excluded);
+  Future<String?> insert(
+    T fedObject, {
+    Set<String>? included,
+    Set<String>? excluded,
+  }) async {
+    return await fedObject.insert(included: included, excluded: excluded);
   }
 
   /// Update
-  Future<String?> update(T fedObject, {Set<String>? included, Set<String>? excluded}) async {
-    return await fedObject.update(included:included, excluded: excluded);
+  Future<String?> update(
+    T fedObject, {
+    Set<String>? included,
+    Set<String>? excluded,
+  }) async {
+    return await fedObject.update(included: included, excluded: excluded);
   }
 
   /// Save: create & update
-  Future<String?> save(T fedObject, {Set<String>? included, Set<String>? excluded}) async {
-    return await fedObject.save(included:included, excluded: excluded);
+  Future<String?> save(
+    T fedObject, {
+    Set<String>? included,
+    Set<String>? excluded,
+  }) async {
+    return await fedObject.save(included: included, excluded: excluded);
   }
 
   /// Load by Id
@@ -106,10 +122,7 @@ class FedObjectHelper<T extends FedObject> {
   }
 
   /// Create a new object and load into it
-  Future<T?> loadNewByField(
-    String field,
-    dynamic fieldValue,
-  ) async {
+  Future<T?> loadNewByField(String field, dynamic fieldValue) async {
     T fedObject = createNew(this);
     if (await loadByField(fedObject, field, fieldValue)) {
       return fedObject;
@@ -135,9 +148,11 @@ class FedObjectHelper<T extends FedObject> {
     return maps.first;
   }
 
-
   /// Fetch an object by field
-  Future<Map<String, dynamic>?> fetchByField(String field, dynamic fieldValue) async {
+  Future<Map<String, dynamic>?> fetchByField(
+    String field,
+    dynamic fieldValue,
+  ) async {
     if (fieldValue == null) return null;
 
     final db = await dbManager.getDatabase();
@@ -201,9 +216,7 @@ class FedObjectHelper<T extends FedObject> {
   }
 
   /// Check if a column exists by name
-  Future<bool> isColumnExists(
-    String? columnName,
-  ) async {
+  Future<bool> isColumnExists(String? columnName) async {
     final db = await dbManager.getDatabase();
     return await FedDBManager.isColumnExists(db, tableName, columnName);
   }
@@ -211,6 +224,7 @@ class FedObjectHelper<T extends FedObject> {
   /// Check if a field is included and not excluded
   bool incExc(String? field, Set<String>? included, Set<String>? excluded) {
     if (field == null) return false;
-    return (included?.contains(field)??true) && !(excluded?.contains(field)??false);
+    return (included?.contains(field) ?? true) &&
+        !(excluded?.contains(field) ?? false);
   }
 }

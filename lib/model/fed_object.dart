@@ -5,12 +5,12 @@ import 'package:uuid/uuid.dart';
 import 'package:sqflite/sqflite.dart';
 
 import 'fed_db_manager.dart';
-import 'fed_object_helper.dart';
+import 'fed_storage_service.dart';
 
 abstract class FedObject {
   String? id;
 
-  FedObject({this.id, required this.iHelper});
+  FedObject({this.id, required this.storage});
 
   // Convert an object into a Map. Object keys must match database columns.
   @mustBeOverridden
@@ -24,10 +24,10 @@ abstract class FedObject {
 
   // Convert a Map (database row) into a new object.
   static T fromMap<T extends FedObject>(
-    FedObjectHelper<T> helper,
+    FedStorageService<T> storage,
     Map<String, dynamic> map,
   ) {
-    T fedObject = helper.createNew(helper);
+    T fedObject = storage.createNew(storage);
     fedObject.loadMap(map);
     return fedObject;
   }
@@ -35,7 +35,7 @@ abstract class FedObject {
   // --- Metadata definition ---
 
   /// Helper for storage activities: CRUD,...
-  FedObjectHelper iHelper;
+  FedStorageService storage;
 
   @mustBeOverridden
   Future manageModel(Database db, int oldVersion, int newVersion) async {
@@ -48,11 +48,11 @@ abstract class FedObject {
   }
 
   Future _createTable(Database db, int newVersion) async {
-    bool bExisted = await FedDBManager.isTableExists(db, iHelper.tableName);
+    bool bExisted = await FedDBManager.isTableExists(db, storage.tableName);
 
     if (!bExisted) {
       await db.execute('''
-      CREATE TABLE ${iHelper.tableName} (
+      CREATE TABLE ${storage.tableName} (
         id TEXT PRIMARY KEY
       )
       ''');
@@ -67,13 +67,13 @@ abstract class FedObject {
 
   // Insert
   Future<String?> insert({Set<String>? included, Set<String>? excluded}) async {
-    final db = await iHelper.dbManager.getDatabase();
+    final db = await storage.dbManager.getDatabase();
     if (id == null || id == '') {
       id = Uuid().v7();
     }
 
     await db.insert(
-      iHelper.tableName,
+      storage.tableName,
       toMap(included: included, excluded: excluded),
     );
 
@@ -82,12 +82,12 @@ abstract class FedObject {
 
   // Update
   Future<String?> update({Set<String>? included, Set<String>? excluded}) async {
-    final db = await iHelper.dbManager.getDatabase();
+    final db = await storage.dbManager.getDatabase();
     if (id == null || id == '') {
       return null;
     } else {
       await db.update(
-        iHelper.tableName,
+        storage.tableName,
         toMap(included: included, excluded: excluded),
         where: 'id = ?',
         whereArgs: [id],
@@ -99,27 +99,27 @@ abstract class FedObject {
 
   // Save: create & update
   Future<String?> save({Set<String>? included, Set<String>? excluded}) async {
-    final db = await iHelper.dbManager.getDatabase();
+    final db = await storage.dbManager.getDatabase();
     if (id == null || id == '') {
       id = Uuid().v7();
 
       await db.insert(
-        iHelper.tableName,
+        storage.tableName,
         toMap(included: included, excluded: excluded),
       );
     } else {
-      bool exists = await FedObject.isExists(iHelper, id!);
+      bool exists = await FedObject.isExists(storage, id!);
 
       if (exists) {
         await db.update(
-          iHelper.tableName,
+          storage.tableName,
           toMap(included: included, excluded: excluded),
           where: 'id = ?',
           whereArgs: [id],
         );
       } else {
         await db.insert(
-          iHelper.tableName,
+          storage.tableName,
           toMap(included: included, excluded: excluded),
         );
       }
@@ -130,12 +130,12 @@ abstract class FedObject {
 
   // Load by Id
   Future<bool> load([String? loadId]) async {
-    final db = await iHelper.dbManager.getDatabase();
+    final db = await storage.dbManager.getDatabase();
 
     if (loadId != null) id = loadId;
 
     final result = await db.query(
-      iHelper.tableName,
+      storage.tableName,
       //columns: ['id'],
       where: 'id = ?',
       whereArgs: [loadId],
@@ -150,16 +150,16 @@ abstract class FedObject {
 
   // Load by a field like an unique Code
   Future<bool> loadByField(String field, dynamic fieldValue) async {
-    final db = await iHelper.dbManager.getDatabase();
+    final db = await storage.dbManager.getDatabase();
 
-    bool columnExists = await iHelper.isColumnExists(field);
+    bool columnExists = await storage.isColumnExists(field);
 
     if (!columnExists) {
       throw ArgumentError('Invalid column name "$field"');
     }
 
     final result = await db.query(
-      iHelper.tableName,
+      storage.tableName,
       where: '$field = ?',
       whereArgs: [fieldValue],
       limit: 1,
@@ -173,7 +173,7 @@ abstract class FedObject {
 
   // Get list
   static Future<List<T>> getList<T extends FedObject>(
-    FedObjectHelper<T> helper, {
+    FedStorageService<T> helper, {
     String? orderBy,
     String? where,
     List<Object>? whereArgs,
@@ -192,7 +192,7 @@ abstract class FedObject {
   }
 
   // Delete, return number of rows affected
-  static Future<int> delete(FedObjectHelper helper, String? delId) async {
+  static Future<int> delete(FedStorageService helper, String? delId) async {
     if (delId == null) return 0;
 
     final db = await helper.dbManager.getDatabase();
@@ -204,7 +204,10 @@ abstract class FedObject {
   }
 
   // Check exist
-  static Future<bool> isExists(FedObjectHelper helper, String? checkId) async {
+  static Future<bool> isExists(
+    FedStorageService helper,
+    String? checkId,
+  ) async {
     if (checkId == null) return false;
 
     final db = await helper.dbManager.getDatabase();
@@ -222,7 +225,7 @@ abstract class FedObject {
 
   // Check exist by a field like an unique Code, Email,...
   static Future<bool> isExistsByField(
-    FedObjectHelper helper,
+    FedStorageService helper,
     String? currentId,
     String? field,
     dynamic fieldValue,
@@ -261,7 +264,7 @@ abstract class FedObject {
   }
 
   /// Extended code after creation or other actions
-  FedObject then(void Function(FedObject) moreAction) {
+  FedObject more(void Function(FedObject) moreAction) {
     moreAction(this);
     return this;
   }

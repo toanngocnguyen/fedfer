@@ -1,7 +1,7 @@
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
-import 'fed_object_helper.dart';
+import 'fed_storage_service.dart';
 
 typedef DBManageModelFunc = Future<void> Function(
   Database db,
@@ -20,7 +20,7 @@ class FedDBManager {
 
   final List<DBManageModelFunc> _manageModelFuncs = [];
 
-  void addModel(FedObjectHelper helper) {
+  void addModel(FedStorageService helper) {
     helper.dbManager = this;
     _manageModelFuncs.add(helper.manageModel);
   }
