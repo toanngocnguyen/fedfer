@@ -1,3 +1,4 @@
+import 'package:meta/meta.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -16,11 +17,14 @@ class FedDBManager {
   final String databaseName;
   final int version;
 
-  void init() {}
+  @mustCallSuper
+  Future<void> init() async {
+    _db ??= await _initDB();
+  }
 
   final List<DBManageModelFunc> _manageModelFuncs = [];
 
-  void addModel(FedStorageService helper) {
+  void addModel(FedModelHelper helper) {
     helper.dbManager = this;
     _manageModelFuncs.add(helper.manageModel);
   }

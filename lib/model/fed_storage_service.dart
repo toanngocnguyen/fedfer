@@ -3,9 +3,9 @@ import 'package:sqflite/sqflite.dart';
 import 'fed_db_manager.dart';
 import 'fed_object.dart';
 
-class FedStorageService<T extends FedObject> {
+class FedModelHelper<T extends FedObject> {
   /// Helper is used as a runtime code/factory utility to create FedObject, manage database operations,...
-  FedStorageService.makeStorageService({
+  FedModelHelper.makeModelHelper({
     required this.createNew,
     required this._tableName,
     this._dbManager,
@@ -15,7 +15,7 @@ class FedStorageService<T extends FedObject> {
   }
 
   late T _ref;
-  T Function(FedStorageService storage) createNew;
+  T Function(FedModelHelper storage) createNew;
 
   FedDBManager? _dbManager;
   FedDBManager get dbManager {

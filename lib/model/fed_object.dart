@@ -10,7 +10,7 @@ import 'fed_storage_service.dart';
 abstract class FedObject {
   String? id;
 
-  FedObject({this.id, required this.storage});
+  FedObject({this.id, required this.model});
 
   // Convert an object into a Map. Object keys must match database columns.
   @mustBeOverridden
@@ -24,7 +24,7 @@ abstract class FedObject {
 
   // Convert a Map (database row) into a new object.
   static T fromMap<T extends FedObject>(
-    FedStorageService<T> storage,
+    FedModelHelper<T> storage,
     Map<String, dynamic> map,
   ) {
     T fedObject = storage.createNew(storage);
@@ -35,7 +35,7 @@ abstract class FedObject {
   // --- Metadata definition ---
 
   /// Helper for storage activities: CRUD,...
-  FedStorageService storage;
+  FedModelHelper model;
 
   @mustBeOverridden
   Future manageModel(Database db, int oldVersion, int newVersion) async {
@@ -48,11 +48,11 @@ abstract class FedObject {
   }
 
   Future _createTable(Database db, int newVersion) async {
-    bool bExisted = await FedDBManager.isTableExists(db, storage.tableName);
+    bool bExisted = await FedDBManager.isTableExists(db, model.tableName);
 
     if (!bExisted) {
       await db.execute('''
-      CREATE TABLE ${storage.tableName} (
+      CREATE TABLE ${model.tableName} (
         id TEXT PRIMARY KEY
       )
       ''');
@@ -67,13 +67,13 @@ abstract class FedObject {
 
   // Insert
   Future<String?> insert({Set<String>? included, Set<String>? excluded}) async {
-    final db = await storage.dbManager.getDatabase();
+    final db = await model.dbManager.getDatabase();
     if (id == null || id == '') {
       id = Uuid().v7();
     }
 
     await db.insert(
-      storage.tableName,
+      model.tableName,
       toMap(included: included, excluded: excluded),
     );
 
@@ -82,12 +82,12 @@ abstract class FedObject {
 
   // Update
   Future<String?> update({Set<String>? included, Set<String>? excluded}) async {
-    final db = await storage.dbManager.getDatabase();
+    final db = await model.dbManager.getDatabase();
     if (id == null || id == '') {
       return null;
     } else {
       await db.update(
-        storage.tableName,
+        model.tableName,
         toMap(included: included, excluded: excluded),
         where: 'id = ?',
         whereArgs: [id],
@@ -99,27 +99,27 @@ abstract class FedObject {
 
   // Save: create & update
   Future<String?> save({Set<String>? included, Set<String>? excluded}) async {
-    final db = await storage.dbManager.getDatabase();
+    final db = await model.dbManager.getDatabase();
     if (id == null || id == '') {
       id = Uuid().v7();
 
       await db.insert(
-        storage.tableName,
+        model.tableName,
         toMap(included: included, excluded: excluded),
       );
     } else {
-      bool exists = await FedObject.isExists(storage, id!);
+      bool exists = await FedObject.isExists(model, id!);
 
       if (exists) {
         await db.update(
-          storage.tableName,
+          model.tableName,
           toMap(included: included, excluded: excluded),
           where: 'id = ?',
           whereArgs: [id],
         );
       } else {
         await db.insert(
-          storage.tableName,
+          model.tableName,
           toMap(included: included, excluded: excluded),
         );
       }
@@ -130,12 +130,12 @@ abstract class FedObject {
 
   // Load by Id
   Future<bool> load([String? loadId]) async {
-    final db = await storage.dbManager.getDatabase();
+    final db = await model.dbManager.getDatabase();
 
     if (loadId != null) id = loadId;
 
     final result = await db.query(
-      storage.tableName,
+      model.tableName,
       //columns: ['id'],
       where: 'id = ?',
       whereArgs: [loadId],
@@ -150,16 +150,16 @@ abstract class FedObject {
 
   // Load by a field like an unique Code
   Future<bool> loadByField(String field, dynamic fieldValue) async {
-    final db = await storage.dbManager.getDatabase();
+    final db = await model.dbManager.getDatabase();
 
-    bool columnExists = await storage.isColumnExists(field);
+    bool columnExists = await model.isColumnExists(field);
 
     if (!columnExists) {
       throw ArgumentError('Invalid column name "$field"');
     }
 
     final result = await db.query(
-      storage.tableName,
+      model.tableName,
       where: '$field = ?',
       whereArgs: [fieldValue],
       limit: 1,
@@ -173,7 +173,7 @@ abstract class FedObject {
 
   // Get list
   static Future<List<T>> getList<T extends FedObject>(
-    FedStorageService<T> helper, {
+    FedModelHelper<T> helper, {
     String? orderBy,
     String? where,
     List<Object>? whereArgs,
@@ -192,7 +192,7 @@ abstract class FedObject {
   }
 
   // Delete, return number of rows affected
-  static Future<int> delete(FedStorageService helper, String? delId) async {
+  static Future<int> delete(FedModelHelper helper, String? delId) async {
     if (delId == null) return 0;
 
     final db = await helper.dbManager.getDatabase();
@@ -204,10 +204,7 @@ abstract class FedObject {
   }
 
   // Check exist
-  static Future<bool> isExists(
-    FedStorageService helper,
-    String? checkId,
-  ) async {
+  static Future<bool> isExists(FedModelHelper helper, String? checkId) async {
     if (checkId == null) return false;
 
     final db = await helper.dbManager.getDatabase();
@@ -225,7 +222,7 @@ abstract class FedObject {
 
   // Check exist by a field like an unique Code, Email,...
   static Future<bool> isExistsByField(
-    FedStorageService helper,
+    FedModelHelper helper,
     String? currentId,
     String? field,
     dynamic fieldValue,
