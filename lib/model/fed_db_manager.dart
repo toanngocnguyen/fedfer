@@ -52,12 +52,12 @@ class FedDBManager {
     return await openDatabase(
       path,
       version: version,
-      onConfigure: (db) async {
-        // Enable Write-Ahead Logging for concurrent read/write across isolates
-        await db.rawQuery('PRAGMA journal_mode=WAL;');
-        // Wait up to 5 seconds instead of throwing "database is locked" immediately
-        await db.rawQuery('PRAGMA busy_timeout=5000;');
-      },
+      // onConfigure: (db) async {
+      //   // Enable Write-Ahead Logging for concurrent read/write across isolates
+      //   await db.rawQuery('PRAGMA journal_mode=WAL;');
+      //   // Wait up to 5 seconds instead of throwing "database is locked" immediately
+      //   await db.rawQuery('PRAGMA busy_timeout=5000;');
+      // },
       onCreate: (db, version) async {
         await _manageModelDBTables(db, -1, version);
       },
