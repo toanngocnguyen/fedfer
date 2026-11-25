@@ -3,8 +3,7 @@
 // Toan Ngoc Nguyen
 // Aug 2026
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../view.dart';
 
@@ -29,6 +28,11 @@ class FedViewWidget<T extends FedViewCode> extends StatefulWidget {
 
     return viewWidgetState?.context;
   }
+
+  GlobalKey<FedViewWidgetState<T>> getStateKey() {
+    return stateKey;
+  }
+
 }
 
 class FedViewWidgetState<T extends FedViewCode> extends State<FedViewWidget<T>> {

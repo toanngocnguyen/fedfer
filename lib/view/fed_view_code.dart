@@ -3,7 +3,7 @@
 // Toan Ngoc Nguyen
 // Aug 2026
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-import 'package:flutter/widgets.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:meta/meta.dart';
 
 import 'fed_view_widget.dart';
@@ -99,6 +99,10 @@ class FedViewCode {
 
   BuildContext? get context {
     return (widget as FedViewWidget?)?.context;
+  }
+
+  GlobalKey<FedViewWidgetState<FedViewCode>>? get stateKey {
+    return (widget as FedViewWidget?)?.getStateKey();
   }
 
   /// Extended code after creation or other actions

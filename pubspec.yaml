@@ -15,6 +15,7 @@ dependencies:
   sqflite_common_ffi_web:
   path:
   uuid:
+  material_ui:
 
 dev_dependencies:
   flutter_test:
